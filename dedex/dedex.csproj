@@ -38,7 +38,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <ProjectReference Include="..\dex.net\dex.net.csproj">
+    <ProjectReference Include="..\dex.net\dex.net\dex.net.csproj">
       <Project>{2B7D42B6-F491-4294-A052-8A30B16EFB9A}</Project>
       <Name>dex.net</Name>
     </ProjectReference>
