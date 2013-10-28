@@ -16,6 +16,7 @@ namespace dedex
 			IDexWriter dexWriter = null;
 			var classPattern = "*";
 			var factory = new WritersFactory ();
+			DirectoryInfo dir = null;
 
 			var dexFiles = new List<FileInfo> ();
 			var tempFiles = new List<FileInfo> ();
@@ -60,18 +61,32 @@ namespace dedex
 										break;
 
 									default:
-										throw new ArgumentException("Unsupported display option " + displayOption);
+										Stop ("Unsupported display option " + displayOption);
+										break;
 								}
 							}
 							break;
-						
+
+						case "-o":
+							var dirName = arg.Trim();
+							if (!Directory.Exists(dirName)) {
+								Stop ("Directory doesn't exist " + dirName);
+							}
+							dir = new DirectoryInfo(arg.Trim());
+							break;
+
 						case "-w":
 							var writerName = arg.Trim();
-							dexWriter = factory.GetWriter(writerName);
+							try {
+								dexWriter = factory.GetWriter(writerName);
+							} catch {
+								Stop (string.Format ("Writer {0} not found", writerName));
+							}
 							break;
 
 						default:
-							throw new ArgumentException("Unsupported argument " + currentOption);
+							Stop ("Unsupported argument " + currentOption);
+							break;
 					}
 
 					currentOption = null;
@@ -130,6 +145,8 @@ namespace dedex
 				dexWriter = factory.GetWriter(factory.GetWriters()[0]);
 			}
 
+			var output = Console.Out;
+
 			// Process all DEX files
 			try {
 				int tempCount = 0;
@@ -145,17 +162,29 @@ namespace dedex
 						}
 						filename = Path.GetFileName(filename);
 
-						// Write out the file name as header
-						Console.WriteLine();
-						Console.WriteLine(filename);
-						foreach (var c in filename)
-							Console.Write("=");
-						Console.WriteLine('\n');
+						if (dir == null) {
+							// Write out the file name as header
+							Console.WriteLine();
+							Console.WriteLine(filename);
+							foreach (var c in filename)
+								Console.Write("=");
+							Console.WriteLine('\n');
+						}
 
 						// Write out each class
 						foreach (var dexClass in dex.GetClasses()) {
-							if (classesToDisplay.IsMatch(dexClass.Name)) {
-								dexWriter.WriteOutClass(dexClass, displayOptions, Console.Out);
+							var fullClassName = dexClass.Name;
+							if (classesToDisplay.IsMatch(fullClassName)) {
+								if (dir != null) {
+									fullClassName = fullClassName.Replace('.', Path.DirectorySeparatorChar) + dexWriter.GetExtension();
+									var fullDirPath = Path.Combine(dir.ToString(), Path.GetDirectoryName(fullClassName));
+									Directory.CreateDirectory(fullDirPath);
+									output = new StreamWriter(Path.Combine(dir.ToString(), fullClassName));
+								}
+
+								using (output) {
+									dexWriter.WriteOutClass(dexClass, displayOptions, output);
+								}
 							}
 						}
 					}
@@ -167,16 +196,22 @@ namespace dedex
 			}
 		}
 
-		public static void PrintHelp ()
+		private static void PrintHelp ()
 		{
 			var languages = string.Join (", ", new WritersFactory ().GetWriters ());
 
 			Console.WriteLine("Usage:\n\tdedex [options] <file.dex|apk> [file2.dex ... fileN.dex]\n");
 			Console.WriteLine("\t-c <pattern>. Display only classes matching the pattern. * is a wildcard");
 			Console.WriteLine("\t-d <display[,display...]>. Options are All, Classes, Methods, Fields, OpCodes");
+			Console.WriteLine("\t-o <directory>. Write classes to individual files in the output directory");
 			Console.WriteLine("\t-w <language>. One of " + languages);
 			Environment.Exit(1);
 		}
 
+		private static void Stop (string message)
+		{
+			Console.Error.WriteLine (message);
+			Environment.Exit (1);
+		}
 	}
 }
