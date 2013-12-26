@@ -78,7 +78,8 @@ namespace dedex
 						case "-w":
 							var writerName = arg.Trim();
 							try {
-								dexWriter = factory.GetWriter(writerName);
+								var writer = GetWritersMap()[writerName];
+								dexWriter = factory.GetWriter(writer);
 							} catch {
 								Stop (string.Format ("Writer {0} not found", writerName));
 							}
@@ -196,9 +197,20 @@ namespace dedex
 			}
 		}
 
+		private static Dictionary<string,string> GetWritersMap() 
+		{
+			var writers = new Dictionary<string,string> ();
+
+			foreach (var writer in new WritersFactory ().GetWriters ()) {
+				writers.Add(writer.ToLower().Replace(" ", ""), writer);
+			}
+
+			return writers;
+		}
+
 		private static void PrintHelp ()
 		{
-			var languages = string.Join (", ", new WritersFactory ().GetWriters ());
+			var languages = string.Join (", ", GetWritersMap().Keys);
 
 			Console.WriteLine("Usage:\n\tdedex [options] <file.dex|apk> [file2.dex ... fileN.dex]\n");
 			Console.WriteLine("\t-c <pattern>. Display only classes matching the pattern. * is a wildcard");
