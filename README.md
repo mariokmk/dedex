@@ -20,5 +20,5 @@ dedex uses the dex.net library which is configured as a git submodule. You must 
 License
 -------
 
-Dex.NET is provided under the [Apache 2.0 License](http://www.apache.org/licenses/LICENSE-2.0)
+dedex is provided under the [Apache 2.0 License](http://www.apache.org/licenses/LICENSE-2.0)
 
